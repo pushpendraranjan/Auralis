@@ -1,0 +1,51 @@
+import streamlit as st
+import requests
+from io import BytesIO
+from pydub import AudioSegment
+import tempfile
+
+# Function to generate music using MusicGen API
+def generate_music(text_input):
+    url = "https://musicgen.api/endpoint"  # Replace with the actual MusicGen API URL
+    payload = {"text": text_input}
+    headers = {"Authorization": "Bearer YOUR_API_KEY"}  # If MusicGen requires an API key
+
+    # Sending the request to the MusicGen API
+    response = requests.post(url, json=payload, headers=headers)
+    
+    if response.status_code == 200:
+        music_data = response.json()  # Assuming music data in response is in audio format or a URL
+        return music_data['audio_url']  # Replace with actual key from response
+    else:
+        return None
+
+# Streamlit User Interface
+def app():
+    st.title("Text to Music Generator")
+
+    # Getting user input
+    user_input = st.text_area("Describe the music you want:", "e.g., calm piano melody, energetic electronic beat")
+
+    # Button to generate music
+    if st.button("Generate Music"):
+        if user_input:
+            with st.spinner("Generating music..."):
+                music_url = generate_music(user_input)
+                if music_url:
+                    st.success("Music generated successfully!")
+                    # Fetch and display audio
+                    audio_file = requests.get(music_url)
+                    audio = AudioSegment.from_mp3(BytesIO(audio_file.content))
+
+                    # Save the generated audio to a temporary file for playback
+                    with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
+                        audio.export(temp_file.name, format="mp3")
+                        st.audio(temp_file.name, format='audio/mp3')
+                else:
+                    st.error("Error generating music.")
+        else:
+            st.warning("Please enter a description for the music.")
+
+# Run the app
+if __name__ == "__main__":
+    app()
